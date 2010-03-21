@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Config::General qw/ParseConfig/;
+use Data::Dumper;
+use Getopt::Long;
+use lib 'lib';
+use Net::Rackspace::Notes;
+
+my $opt_add;
+my $opt_delete;
+my $opt_list;
+my $opt_show;
+my $opt_append;
+
+GetOptions(
+    'add=s'     =>  \$opt_add,
+    'append=i'  =>  \$opt_append,
+    'delete=i'  =>  \$opt_delete,
+    'rm=i'      =>  \$opt_delete,
+    'list'      =>  \$opt_list,
+    'show=i'    =>  \$opt_show,
+);
+
+my %config = ParseConfig("$ENV{HOME}/.racknotes");
+
+my $agent = Net::Rackspace::Notes->new(
+    login => $config{account},
+    password => $config{password}
+);
+
+if ($opt_add) {
+    local $/;
+    my $response = $agent->add_note($opt_add, <STDIN>);
+    print "status: " . $response->status_line . "\n";
+    print $response->content . "\n" unless $response->is_success;
+} elsif ($opt_delete) {
+    my $response = $agent->delete_note($opt_delete);
+    print "status: " . $response->status_line . "\n";
+    print $response->content . "\n" unless $response->is_success;
+} elsif ($opt_show) {
+    print $agent->content($opt_show), "\n";
+} elsif ($opt_append) {
+    local $/;
+    my $new_content = <STDIN>;
+    my $num = $opt_append;
+    my $note = $agent->note($num);
+    my $response = $agent->delete_note($num);
+    print "status: " . $response->status_line . "\n";
+    my $content = $note->{content} . $new_content;
+    $response = $agent->add_note($note->{subject}, $content);
+    print "status: " . $response->status_line . "\n";
+} elsif ($opt_list or 1) {
+    my $count = 0;
+    foreach my $note ($agent->notes) {
+        $count++;
+        print "$count: $note->{subject}\n";
+    }
+}
+
+# vim:et
