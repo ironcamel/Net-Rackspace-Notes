@@ -20,4 +20,12 @@ WriteMakefile(
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Net-Rackspace-Notes-*' },
+    META_MERGE => {
+        provides => {
+            'Net::Rackspace::Notes' => {
+                file =>  'lib/Net/Rackspace/Notes.pm',
+                version => 0.0002,
+            }
+        }
+    },
 );
