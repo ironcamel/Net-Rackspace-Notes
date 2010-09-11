@@ -142,7 +142,7 @@ class Net::Rackspace::Notes extends LWP::UserAgent
 
 =head1 NAME
 
-Net::Rackspace::Notes
+Net::Rackspace::Notes - A way to interface with your Rackspace Email Notes.
 
 =head1 VERSION
 
