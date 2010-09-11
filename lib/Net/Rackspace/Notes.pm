@@ -6,9 +6,8 @@ class Net::Rackspace::Notes extends LWP::UserAgent
     use HTTP::Request;
     use JSON::XS qw/encode_json decode_json/;
     use MooseX::NonMoose; # Need this since LWP::UserAgent is non moose.
-    use XML::Simple;
 
-	our $VERSION = '0.01';
+	our $VERSION = '0.0001';
 
     has login => (
         isa => 'Str',
@@ -143,28 +142,30 @@ class Net::Rackspace::Notes extends LWP::UserAgent
 
 =head1 NAME
 
-Net::Rackspace::Notes - The great new Net::Rackspace::Notes!
+Net::Rackspace::Notes
 
 =head1 VERSION
 
-Version 0.01
+Version 0.0001
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+This class implements the functionality needed to 
+interact with the Rackspace Email Notes API.
+Most likely, the racknotes script will be what you want to use instead of this.
 
-Perhaps a little code snippet.
+Example usage:
 
     use Net::Rackspace::Notes;
 
-    my $foo = Net::Rackspace::Notes->new();
+    my $n = Net::Rackspace::Notes->new();
     ...
 
 =head1 FUNCTIONS
 
-=head2 function1
+=head2 add_note
 
-=head2 function2
+=head2 delete_note
 
 =head1 AUTHOR
 
@@ -176,15 +177,11 @@ Please report any bugs or feature requests to C<bug-net-rackspace-notes at rt.cp
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Net-Rackspace-Notes>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
-
-
-
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc Net::Rackspace::Notes
-
 
 You can also look for information at:
 
@@ -222,10 +219,6 @@ by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
 
-
 =cut
 
-1; # End of Net::Rackspace::Notes
-
-# vim:et:fdm=indent:fdl=1:fdn=2
-
+'Net::Rackspace::Notes'

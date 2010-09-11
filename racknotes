@@ -1,56 +1,89 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
-use Config::General qw/ParseConfig/;
-use Data::Dumper;
-use Getopt::Long;
+use Config::General qw(ParseConfig);
+use Getopt::Long qw(GetOptions);
 use lib 'lib';
 use Net::Rackspace::Notes;
+use Pod::Usage;
 
-my $opt_add;
-my $opt_delete;
-my $opt_list;
-my $opt_show;
-my $opt_append;
+my $config_path = "$ENV{HOME}/.racknotes";
 
-GetOptions(
-    'add=s'     =>  \$opt_add,
-    'append=i'  =>  \$opt_append,
-    'delete=i'  =>  \$opt_delete,
-    'rm=i'      =>  \$opt_delete,
-    'list'      =>  \$opt_list,
-    'show=i'    =>  \$opt_show,
-);
+die <<EOD unless -r $config_path;
+You should create a config file at $config_path with 2 lines:
+account = bob\@rackspace.com  # your email address
+password = foo               # your password
+EOD
 
-my %config = ParseConfig("$ENV{HOME}/.racknotes");
+my %config = ParseConfig($config_path);
 
 my $agent = Net::Rackspace::Notes->new(
     login => $config{account},
     password => $config{password}
 );
 
-if ($opt_add) {
-    local $/;
-    my $response = $agent->add_note($opt_add, <STDIN>);
+my %options;
+
+GetOptions(
+    \%options,
+    'add=s',
+    'append=i',
+    'delete|rm=i',
+    'help',
+    'list',
+    'show=i',
+);
+
+my %dispatch = (
+    add     =>  \&add_note,
+    append  =>  \&append_to_note,
+    delete  =>  \&delete_note,
+    help    =>  sub { pod2usage(-verbose => 1) },
+    list    =>  \&list_notes,
+    show    =>  \&show_note,
+);
+
+$options{list}++ unless %options;
+
+while (my ($option, $value) = each %options) {
+    $dispatch{$option}->($value)
+}
+
+#-------------------------------------------------------------------------------
+# Function definitions ---------------------------------------------------------
+
+sub add_note {
+    my ($subject) = @_;
+    my $body = do { local $/; <STDIN> };
+    my $response = $agent->add_note($subject, $body);
     print "status: " . $response->status_line . "\n";
     print $response->content . "\n" unless $response->is_success;
-} elsif ($opt_delete) {
-    my $response = $agent->delete_note($opt_delete);
-    print "status: " . $response->status_line . "\n";
-    print $response->content . "\n" unless $response->is_success;
-} elsif ($opt_show) {
-    print $agent->content($opt_show), "\n";
-} elsif ($opt_append) {
-    local $/;
-    my $new_content = <STDIN>;
-    my $num = $opt_append;
+}
+
+sub append_to_note {
+    my ($note_id) = @_;
+    my $body = do { local $/; <STDIN> };
+    my $num = $note_id;
     my $note = $agent->note($num);
-    my $response = $agent->delete_note($num);
+    my $content = $note->{content} . $body;
+    my $response = $agent->add_note($note->{subject}, $content);
     print "status: " . $response->status_line . "\n";
-    my $content = $note->{content} . $new_content;
-    $response = $agent->add_note($note->{subject}, $content);
+    $response = $agent->delete_note($num);
+}
+
+sub delete_note {
+    my ($note_id) = @_;
+    my $response = $agent->delete_note($note_id);
     print "status: " . $response->status_line . "\n";
-} elsif ($opt_list or 1) {
+    print $response->content . "\n" unless $response->is_success;
+}
+
+sub show_note {
+    my ($note_id) = @_;
+    print $agent->content($note_id), "\n";
+}
+
+sub list_notes {
     my $count = 0;
     foreach my $note ($agent->notes) {
         $count++;
@@ -58,4 +91,41 @@ if ($opt_add) {
     }
 }
 
-# vim:et
+
+__END__
+
+=head1 NAME
+
+racknotes
+
+=head1 SYNOPSIS
+
+  Options:
+    -h, --help              display this help message
+        --add=subject       add a new note, content is read from stdin
+        --append=noteid     append the content of stdin to the note
+    -d, --delete=noteid     delete the note
+    -l, --list              lists id and subject of all notes
+        --rm=noteid         alias for --delete
+    -s, --show=noteid       show the note
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--help>
+
+Print a brief help message.
+
+=item B<--add=subject>
+
+Add a new note with the given subject.
+The contents of the note will be read from stdin.
+
+=back
+
+=head1 DESCRIPTION
+
+This program is a command line tool to interface with Rackspace Email Notes.
+
+=cut
