@@ -8,18 +8,6 @@ our $VERSION = '0.0002';
 use HTTP::Request;
 use JSON qw(to_json from_json);
 
-has login => (
-    isa => 'Str',
-    is => 'ro',
-    required => 1
-);
-
-has password => (
-    isa => 'Str',
-    is => 'ro',
-    required => 1
-);
-
 has base_uri => (
     isa => 'Str',
     is => 'ro',
@@ -108,11 +96,6 @@ sub _build_notes {
 
     return \@notes;
 }
-
-override get_basic_credentials => sub {
-    my ($self, $realm, $uri, $isproxy) = @_;
-    return $self->login, $self->password;
-};
 
 sub add_note {
     my ($self, $subject, $body) = @_;

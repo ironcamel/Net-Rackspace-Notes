@@ -17,10 +17,9 @@ EOD
 
 my %config = ParseConfig($config_path);
 
-my $agent = Net::Rackspace::Notes->new(
-    login => $config{account},
-    password => $config{password}
-);
+my $agent = Net::Rackspace::Notes->new;
+$agent->credentials(
+    'apps.rackspace.com:80', 'webmail', $config{account}, $config{password});
 
 my %options;
 
