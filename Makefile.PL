@@ -14,18 +14,10 @@ WriteMakefile(
         'Config::General'                        =>  0,
         'JSON'                                   =>  0,
         'LWP::UserAgent'                         =>  0,
-        'MooseX::Declare'                        =>  0,
+        'Moose'                                  =>  0,
         'MooseX::NonMoose'                       =>  0,
         'Test::More'                             =>  0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Net-Rackspace-Notes-*' },
-    META_MERGE => {
-        provides => {
-            'Net::Rackspace::Notes' => {
-                file =>  'lib/Net/Rackspace/Notes.pm',
-                version => 0.0002,
-            }
-        }
-    },
 );
