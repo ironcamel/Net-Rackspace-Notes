@@ -9,8 +9,14 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/Net/Rackspace/Notes.pm',
     LICENSE             => 'perl',
     EXE_FILES           => [ 'script/racknotes' ],
-    PL_FILES            => {},
+    META_MERGE => {
+        resources => {
+            repository => 'http://github.com/ironcamel/Net-Rackspace-Notes',
+            bugtracker => 'http://github.com/ironcamel/Net-Rackspace-Notes/issues',
+        },
+    },
     PREREQ_PM => {
+        'App::Rad'                               => 0,
         'Config::General'                        => 0,
         'JSON'                                   => 0,
         'LWP::UserAgent'                         => 0,
