@@ -2,81 +2,83 @@
 use strict;
 use warnings;
 use lib qw(lib);
+use App::Rad;
 use Config::General qw(ParseConfig);
 use Getopt::Long qw(GetOptions);
 use Net::Rackspace::Notes qw(notes);
 use Pod::Usage qw(pod2usage);
+use Term::ReadPassword qw(read_password);
 
-my %options;
-GetOptions(
-    \%options,
-    'add=s',
-    'append=i',
-    'delete=i',
-    'help',
-    'list',
-    'show=i',
-);
-$options{list}++ unless %options;
-
-my %dispatch = (
-    add     =>  \&add_note,
-    append  =>  \&append_to_note,
-    delete  =>  \&delete_note,
-    help    =>  sub { pod2usage(-verbose => 1) },
-    list    =>  \&list_notes,
-    show    =>  \&show_note,
-);
-
-my ($email, $password) = get_login_info();
-Net::Rackspace::Notes::init(email => $email, password => $password);
-
-while (my ($option, $value) = each %options) {
-    $dispatch{$option}->($value)
+sub setup {
+    my $c = shift;
+    $c->register_commands({
+        add    => 'add a new note, content is read from stdin',
+        append => 'append the content of stdin to the note',
+        delete => 'delete the note',
+        list   => 'lists id and subject of all notes',
+        show   => 'show the contents of the note',
+    });
+    my ($email, $password) = get_login_info();
+    $c->stash->{racknotes} = Net::Rackspace::Notes->new(
+        email    => $email,
+        password => $password,
+    );
 }
+
+App::Rad->run();
 
 #-------------------------------------------------------------------------------
 # Function definitions ---------------------------------------------------------
 
-sub add_note {
-    my ($subject) = @_;
+sub add {
+    my $c = shift;
+    my $subject = $c->options->{subject};
     my $body = do { local $/; <STDIN> };
-    my $response = Net::Rackspace::Notes::add_note($subject, $body);
-    print "status: " . $response->status_line . "\n";
-    print $response->content . "\n" unless $response->is_success;
+    my $racknotes = $c->stash->{racknotes};
+    my $response = $racknotes->add_note($subject, $body);
+    return "status: " . $response->status_line;
+    #print $response->content . "\n" unless $response->is_success;
 }
 
-sub append_to_note {
-    my ($note_id) = @_;
+sub append {
+    my $c = shift;
+    my $note_id = $c->options->{num};
     my $body = do { local $/; <STDIN> };
     my $num = $note_id;
     my $note = note($num);
     my $content = $note->{content} . $body;
-    my $response = Net::Rackspace::Notes::add_note($note->{subject}, $content);
-    print "status: " . $response->status_line . "\n";
-    $response = Net::Rackspace::Notes::delete_note($num);
+    my $racknotes = $c->stash->{racknotes};
+    my $response = $racknotes->add_note($note->{subject}, $content);
+    $response = $racknotes->delete_note($num);
+    return "status: " . $response->status_line;
 }
 
-sub delete_note {
-    my ($note_id) = @_;
-    my $response = Net::Rackspace::Notes::delete_note($note_id);
-    print "status: " . $response->status_line . "\n";
-    print $response->content . "\n" unless $response->is_success;
+sub delete {
+    my $c = shift;
+    my $note_id = $c->options->{num};
+    my $racknotes = $c->stash->{racknotes};
+    my $response = $racknotes->delete_note($note_id);
+    return "status: " . $response->status_line;
+    #print $response->content . "\n" unless $response->is_success;
 }
 
-sub show_note {
-    my ($note_id) = @_;
-    print notes->[$note_id]{content}, "\n";
+sub show {
+    my $c = shift;
+    my $note_id = $c->options->{num};
+    my $racknotes = $c->stash->{racknotes};
+    return $racknotes->notes->[$note_id]{content};
 }
 
-sub list_notes {
+sub list {
+    my $c = shift;
     my $count = 0;
-    foreach my $note (@{notes()}) {
-        printf "%2d: %s\n", $count++, $note->{subject};
-    }
+    my $racknotes = $c->stash->{racknotes};
+    my @notes = @{$racknotes->notes};
+    return join "\n", map sprintf("%2d: %s", $count++, $_->{subject}), @notes;
 }
 
 sub get_login_info {
+    my $c = shift;
     my ($email, $password);
     my $config_path = "$ENV{HOME}/.racknotes";
 
@@ -94,8 +96,7 @@ sub get_login_info {
         die "$email is not a valid email address\n"
             unless $email =~ /.+@.+\..+/;
 
-        print "password: ";
-        chomp($password = <STDIN>);
+        $password = read_password('password: ');
     }
     return ($email, $password);
 }
@@ -125,24 +126,24 @@ racknotes - A command line interface to Rackspace Email Notes.
 
 Print a brief help message.
 
-=item B<--add=subject>
+=item B<add --subject=SUBJECT>
 
 Add a new note with the given subject.
 The contents of the note will be read from stdin.
 
-=item B<--append=noteid>
+=item B<append --num=NUM>
 
 Append the content of stdin to the note.
 
-=item B<-d|--delete=noteid>
+=item B<delete --num=NUM>
 
 Delete the note.
 
-=item B<-l|--list>
+=item B<list>
 
 List the id and subject of all the notes.
 
-=item B<-s|--show=noteid>
+=item B<show --num=NUM>
 
 Show the contents of the note.
 

@@ -1,5 +1,12 @@
 Revision history for Net-Rackspace-Notes
 
-0.0001  Date/time
-        First version, released on an unsuspecting world.
+0.0100  2010-09-
+        * Removed MooseX::Declare sugar.
+        * Prompt users to enter login info if ~/.racknotes is missing.
+        * Use App::Rad and treat first element in ARGV as a command.
 
+0.0002  2010-09-11
+        * Minor change to Makefile.PL
+
+0.0001  2010-09-11
+        First version, released on an unsuspecting world.

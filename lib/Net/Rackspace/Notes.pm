@@ -1,33 +1,61 @@
 package Net::Rackspace::Notes;
+use Moose;
 
 our $VERSION = '0.0002';
-
-use Exporter qw(import);
-our @EXPORT_OK = qw(
-    add_note
-    delete_note
-    notes
-);
 
 use HTTP::Request;
 use JSON qw(to_json from_json);
 use LWP::UserAgent;
-use Memoize;
 
-memoize('base_uri_notes');
+has email => (
+    is => 'ro',
+    isa => 'Str',
+    required => 1,
+);
 
-my $base_uri = "http://apps.rackspace.com/api/";
+has password => (
+    is => 'ro',
+    isa => 'Str',
+    required => 1,
+);
 
-my $agent = LWP::UserAgent->new();
+has agent => (
+    is => 'ro',
+    isa => 'LWP::UserAgent',
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        my $agent = LWP::UserAgent->new();
+        $agent->credentials('apps.rackspace.com:80', 'webmail',
+            $self->email, $self->password);
+        $agent->default_header(Accept => 'application/json');
+        return $agent;
+    },
+);
 
-sub init {
-    my %args = @_;
-    $agent->credentials('apps.rackspace.com:80', 'webmail',
-        $args{email}, $args{password});
-    $agent->default_header(Accept => 'application/json');
-}
+has base_uri => (
+    is => 'ro',
+    isa => 'Str',
+    default => 'http://apps.rackspace.com/api/',
+);
 
-sub base_uri_notes {
+has base_uri_notes => (
+    is => 'ro',
+    isa => 'Str',
+    lazy => 1,
+    builder => '_build_base_uri_notes',
+);
+
+has notes => (
+    is => 'ro',
+    isa => 'ArrayRef[HashRef[Str]]',
+    lazy => 1,
+    builder => '_build_notes',
+);
+
+sub _build_base_uri_notes {
+    my ($self) = @_;
+
     my ($response, $data);
 
     #$response = $self->get($self->base_uri);
@@ -35,20 +63,21 @@ sub base_uri_notes {
     #print Dumper $data;
 
     #$response = $self->get($data->{versions}[0]);
-    $response = $agent->get("$base_uri/0.9.0");
+    $response = $self->agent->get($self->base_uri . "/0.9.0");
     my $status = $response->status_line;
     die "Response was $status. Check your email and password.\n"
         unless $status =~ /^2\d\d/;
     $data = from_json $response->content;
 
-    $response = $agent->get($data->{usernames}[0]);
+    $response = $self->agent->get($data->{usernames}[0]);
     $data = from_json $response->content;
 
     return $data->{data_types}{notes}{uri};
 }
 
-sub notes {
-    my $response = $agent->get(base_uri_notes);
+sub _build_notes {
+    my ($self) = @_;
+    my $response = $self->agent->get($self->base_uri_notes);
     my $data = from_json $response->content;
 
     my @children;
@@ -57,7 +86,7 @@ sub notes {
         if ($pid) { # parent
             push @children, [ $p, $uri ];
         } else { # child
-            $response = $agent->get($uri);
+            $response = $self->agent->get($uri);
             print $response->content;
             exit;
         }
@@ -77,8 +106,8 @@ sub notes {
 }
 
 sub add_note {
-    my ($subject, $body) = @_;
-    my $req = HTTP::Request->new(POST => base_uri_notes);
+    my ($self, $subject, $body) = @_;
+    my $req = HTTP::Request->new(POST => $self->base_uri_notes);
     $req->header(Content_Type => 'application/json');
     my $json = to_json {
         note => {
@@ -87,23 +116,18 @@ sub add_note {
         }
     };
     $req->content($json);
-    my $response = $agent->request($req);
+    my $response = $self->agent->request($req);
     return $response;
 }
 
 sub delete_note {
-    my ($num) = @_;
-    my $uri = notes->[$num]->{uri};
+    my ($self, $num) = @_;
+    my $uri = $self->notes->[$num]->{uri};
     my $req = HTTP::Request->new(DELETE => $uri);
     $req->header(Content_Type => 'application/json');
-    my $response = $agent->request($req);
+    my $response = $self->agent->request($req);
     #splice(@{notes()}, $num, 1) if ($response->is_success);
     return $response;
-}
-
-sub note {
-    my ($num) = @_;
-    return notes->[$num - 1];
 }
 
 =head1 NAME
