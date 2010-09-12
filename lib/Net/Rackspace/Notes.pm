@@ -6,7 +6,7 @@ extends 'LWP::UserAgent';
 our $VERSION = '0.0002';
 
 use HTTP::Request;
-use JSON::XS qw/encode_json decode_json/;
+use JSON qw(to_json from_json);
 
 has login => (
     isa => 'Str',
@@ -49,15 +49,15 @@ sub _build_base_uri_notes {
     my ($response, $data);
 
     #$response = $self->get($self->base_uri);
-    #$data = decode_json $response->content;
+    #$data = from_json $response->content;
     #print Dumper $data;
 
     #$response = $self->get($data->{versions}[0]);
     $response = $self->get($self->base_uri . '/0.9.0');
-    $data = decode_json $response->content;
+    $data = from_json $response->content;
 
     $response = $self->get($data->{usernames}[0]);
-    $data = decode_json $response->content;
+    $data = from_json $response->content;
 
     return $data->{data_types}{notes}{uri};
 }
@@ -66,12 +66,12 @@ sub _build_base_uri_notes {
 sub _build_notes_old {
     my ($self) = @_;
     my $response = $self->get($self->base_uri_notes);
-    my $data = decode_json $response->content;
+    my $data = from_json $response->content;
 
     my @notes;
     foreach my $note (@{$data->{notes}}) {
         $response = $self->get($note->{uri});
-        $data = decode_json($response->content)->{note};
+        $data = from_json($response->content)->{note};
         $data->{uri} = $note->{uri};
         push @notes, $data;
     }
@@ -81,7 +81,7 @@ sub _build_notes_old {
 sub _build_notes {
     my ($self) = @_;
     my $response = $self->get($self->base_uri_notes);
-    my $data = decode_json $response->content;
+    my $data = from_json $response->content;
 
     my @children;
     foreach my $uri (map $_->{uri}, @{$data->{notes}}) {
@@ -101,7 +101,7 @@ sub _build_notes {
         my $json;
         { local $/; $json = <$p>; }
         close $p;
-        $data = decode_json($json)->{note};
+        $data = from_json($json)->{note};
         $data->{uri} = $uri;
         push @notes, $data;
     }
@@ -118,7 +118,7 @@ sub add_note {
     my ($self, $subject, $body) = @_;
     my $req = HTTP::Request->new(POST => $self->base_uri_notes);
     $req->header(Content_Type => 'application/json');
-    my $json = encode_json {
+    my $json = to_json {
         note => {
             subject => $subject,
             content => $body,
