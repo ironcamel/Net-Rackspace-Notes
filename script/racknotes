@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use lib 'lib';
 use Config::General qw(ParseConfig);
 use Getopt::Long qw(GetOptions);
-use lib 'lib';
-use Net::Rackspace::Notes;
+use Net::Rackspace::Notes qw(notes);
 use Pod::Usage;
 
 my $config_path = "$ENV{HOME}/.racknotes";
@@ -16,10 +16,10 @@ password = foo               # your password
 EOD
 
 my %config = ParseConfig($config_path);
-
-my $agent = Net::Rackspace::Notes->new;
-$agent->credentials(
-    'apps.rackspace.com:80', 'webmail', $config{account}, $config{password});
+Net::Rackspace::Notes::init(
+    account => $config{account},
+    password => $config{password},
+);
 
 my %options;
 
@@ -54,7 +54,7 @@ while (my ($option, $value) = each %options) {
 sub add_note {
     my ($subject) = @_;
     my $body = do { local $/; <STDIN> };
-    my $response = $agent->add_note($subject, $body);
+    my $response = Net::Rackspace::Notes::add_note($subject, $body);
     print "status: " . $response->status_line . "\n";
     print $response->content . "\n" unless $response->is_success;
 }
@@ -63,30 +63,29 @@ sub append_to_note {
     my ($note_id) = @_;
     my $body = do { local $/; <STDIN> };
     my $num = $note_id;
-    my $note = $agent->note($num);
+    my $note = note($num);
     my $content = $note->{content} . $body;
-    my $response = $agent->add_note($note->{subject}, $content);
+    my $response = Net::Rackspace::Notes::add_note($note->{subject}, $content);
     print "status: " . $response->status_line . "\n";
-    $response = $agent->delete_note($num);
+    $response = Net::Rackspace::Notes::delete_note($num);
 }
 
 sub delete_note {
     my ($note_id) = @_;
-    my $response = $agent->delete_note($note_id);
+    my $response = Net::Rackspace::Notes::delete_note($note_id);
     print "status: " . $response->status_line . "\n";
     print $response->content . "\n" unless $response->is_success;
 }
 
 sub show_note {
     my ($note_id) = @_;
-    print $agent->content($note_id), "\n";
+    print notes->[$note_id]{content}, "\n";
 }
 
 sub list_notes {
     my $count = 0;
-    foreach my $note ($agent->notes) {
-        $count++;
-        print "$count: $note->{subject}\n";
+    foreach my $note (@{notes()}) {
+        printf "%2d: %s\n", $count++, $note->{subject};
     }
 }
 
@@ -95,7 +94,7 @@ __END__
 
 =head1 NAME
 
-racknotes
+racknotes - A command line interface to Rackspace Email Notes.
 
 =head1 SYNOPSIS
 

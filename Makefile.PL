@@ -14,8 +14,6 @@ WriteMakefile(
         'Config::General'                        =>  0,
         'JSON'                                   =>  0,
         'LWP::UserAgent'                         =>  0,
-        'Moose'                                  =>  0,
-        'MooseX::NonMoose'                       =>  0,
         'Test::More'                             =>  0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
