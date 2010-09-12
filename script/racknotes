@@ -27,7 +27,7 @@ GetOptions(
     \%options,
     'add=s',
     'append=i',
-    'delete|rm=i',
+    'delete=i',
     'help',
     'list',
     'show=i',
@@ -105,14 +105,13 @@ racknotes
         --append=noteid     append the content of stdin to the note
     -d, --delete=noteid     delete the note
     -l, --list              lists id and subject of all notes
-        --rm=noteid         alias for --delete
-    -s, --show=noteid       show the note
+    -s, --show=noteid       show the contents of the note
 
 =head1 OPTIONS
 
 =over 4
 
-=item B<--help>
+=item B<-h|--help>
 
 Print a brief help message.
 
@@ -120,6 +119,22 @@ Print a brief help message.
 
 Add a new note with the given subject.
 The contents of the note will be read from stdin.
+
+=item B<--append=noteid>
+
+Append the content of stdin to the note.
+
+=item B<-d|--delete=noteid>
+
+Delete the note.
+
+=item B<-l|--list>
+
+List the id and subject of all the notes.
+
+=item B<-s|--show=noteid>
+
+Show the contents of the note.
 
 =back
 
