@@ -1,28 +1,13 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use lib 'lib';
+use lib qw(lib);
 use Config::General qw(ParseConfig);
 use Getopt::Long qw(GetOptions);
 use Net::Rackspace::Notes qw(notes);
-use Pod::Usage;
-
-my $config_path = "$ENV{HOME}/.racknotes";
-
-die <<EOD unless -r $config_path;
-You should create a config file at $config_path with 2 lines:
-account = bob\@rackspace.com  # your email address
-password = foo               # your password
-EOD
-
-my %config = ParseConfig($config_path);
-Net::Rackspace::Notes::init(
-    account => $config{account},
-    password => $config{password},
-);
+use Pod::Usage qw(pod2usage);
 
 my %options;
-
 GetOptions(
     \%options,
     'add=s',
@@ -32,6 +17,7 @@ GetOptions(
     'list',
     'show=i',
 );
+$options{list}++ unless %options;
 
 my %dispatch = (
     add     =>  \&add_note,
@@ -42,7 +28,8 @@ my %dispatch = (
     show    =>  \&show_note,
 );
 
-$options{list}++ unless %options;
+my ($email, $password) = get_login_info();
+Net::Rackspace::Notes::init(email => $email, password => $password);
 
 while (my ($option, $value) = each %options) {
     $dispatch{$option}->($value)
@@ -87,6 +74,30 @@ sub list_notes {
     foreach my $note (@{notes()}) {
         printf "%2d: %s\n", $count++, $note->{subject};
     }
+}
+
+sub get_login_info {
+    my ($email, $password);
+    my $config_path = "$ENV{HOME}/.racknotes";
+
+    if (-r $config_path) {
+        my %config = ParseConfig($config_path);
+        ($email, $password) = @config{qw(email password)};
+    } else {
+        print "If you don't want to enter your account info each time, you\n",
+            "can create a config file at $config_path with 2 entries:\n",
+            "  email = bob\@foo.com\n",
+            "  password = foo\n\n";
+
+        print "email: ";
+        chomp($email = <STDIN>);
+        die "$email is not a valid email address\n"
+            unless $email =~ /.+@.+\..+/;
+
+        print "password: ";
+        chomp($password = <STDIN>);
+    }
+    return ($email, $password);
 }
 
 

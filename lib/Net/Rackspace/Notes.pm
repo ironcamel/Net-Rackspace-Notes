@@ -23,7 +23,7 @@ my $agent = LWP::UserAgent->new();
 sub init {
     my %args = @_;
     $agent->credentials('apps.rackspace.com:80', 'webmail',
-        $args{account}, $args{password});
+        $args{email}, $args{password});
     $agent->default_header(Accept => 'application/json');
 }
 
@@ -36,6 +36,9 @@ sub base_uri_notes {
 
     #$response = $self->get($data->{versions}[0]);
     $response = $agent->get("$base_uri/0.9.0");
+    my $status = $response->status_line;
+    die "Response was $status. Check your email and password.\n"
+        unless $status =~ /^2\d\d/;
     $data = from_json $response->content;
 
     $response = $agent->get($data->{usernames}[0]);
@@ -121,7 +124,7 @@ Example usage:
 
     use Net::Rackspace::Notes qw(add_note delete_note notes);
     Net::Rackspace::Notes::init(
-        account  => 'bob@rackspace.com',
+        email  => 'bob@foo.com',
         password => 'foo'
     );
 
