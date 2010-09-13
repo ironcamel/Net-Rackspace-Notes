@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use lib qw(lib);
 use App::Rad;
-use Config::General qw(ParseConfig);
 use Getopt::Long qw(GetOptions);
 use Net::Rackspace::Notes qw(notes);
 use Pod::Usage qw(pod2usage);
@@ -18,7 +17,13 @@ sub setup {
         list   => 'lists id and subject of all notes',
         show   => 'show the contents of the note',
     });
-    my ($email, $password) = get_login_info();
+}
+
+sub pre_process {
+    my $c = shift;
+    return if ! grep { $_ eq $c->cmd } $c->commands or $c->cmd eq 'help';
+    $c->getopt('num|n=i', 'subject|s=s') or exit 1;
+    my ($email, $password) = get_login_info($c);
     $c->stash->{racknotes} = Net::Rackspace::Notes->new(
         email    => $email,
         password => $password,
@@ -42,9 +47,8 @@ sub add {
 
 sub append {
     my $c = shift;
-    my $note_id = $c->options->{num};
+    my $num = $c->options->{num};
     my $body = do { local $/; <STDIN> };
-    my $num = $note_id;
     my $note = note($num);
     my $content = $note->{content} . $body;
     my $racknotes = $c->stash->{racknotes};
@@ -55,41 +59,46 @@ sub append {
 
 sub delete {
     my $c = shift;
-    my $note_id = $c->options->{num};
+    my $num = $c->options->{num};
     my $racknotes = $c->stash->{racknotes};
-    my $response = $racknotes->delete_note($note_id);
+    my $response = $racknotes->delete_note($num);
     return "status: " . $response->status_line;
     #print $response->content . "\n" unless $response->is_success;
 }
 
 sub show {
     my $c = shift;
-    my $note_id = $c->options->{num};
+    my $num = $c->options->{num};
     my $racknotes = $c->stash->{racknotes};
-    return $racknotes->notes->[$note_id]{content};
+    my $note = $racknotes->notes->[$num];
+    return "Subject: $note->{subject}\n\nBody:\n$note->{content}";
 }
 
 sub list {
     my $c = shift;
     my $count = 0;
     my $racknotes = $c->stash->{racknotes};
-    my @notes = @{$racknotes->notes};
-    return join "\n", map sprintf("%2d: %s", $count++, $_->{subject}), @notes;
+    return join "\n",
+        map { sprintf "%2d: %s", $count++, $_->{subject}  } $racknotes->notes;
 }
 
 sub get_login_info {
     my $c = shift;
     my ($email, $password);
     my $config_path = "$ENV{HOME}/.racknotes";
-
     if (-r $config_path) {
-        my %config = ParseConfig($config_path);
-        ($email, $password) = @config{qw(email password)};
+        $c->load_config($config_path);
+        ($email, $password) = @{$c->config}{qw(email password)};
+        $password = read_password('password: ')
+            if not defined($password) or $password eq '';
     } else {
         print "If you don't want to enter your account info each time, you\n",
             "can create a config file at $config_path with 2 entries:\n",
             "  email = bob\@foo.com\n",
-            "  password = foo\n\n";
+            "  password = foo\n\n",
+            "Your config file may also just contain the email entry without\n",
+            "the password entry. You will then just be prompted for your\n",
+            "password when you run racknotes.\n\n";
 
         print "email: ";
         chomp($email = <STDIN>);
@@ -109,14 +118,15 @@ __END__
 racknotes - A command line interface to Rackspace Email Notes.
 
 =head1 SYNOPSIS
-
-  Options:
-    -h, --help              display this help message
-        --add=subject       add a new note, content is read from stdin
-        --append=noteid     append the content of stdin to the note
-    -d, --delete=noteid     delete the note
-    -l, --list              lists id and subject of all notes
-    -s, --show=noteid       show the contents of the note
+  Usage: racknotes command [arguments]
+  
+  Available Commands:
+      add         add a new note, content is read from stdin
+      append      append the content of stdin to the note
+      delete      delete the note
+      help        show syntax and available commands
+      list        lists id and subject of all notes
+      show        show the contents of the note
 
 =head1 OPTIONS
 

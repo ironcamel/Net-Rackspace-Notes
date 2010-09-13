@@ -51,6 +51,7 @@ has notes => (
     isa => 'ArrayRef[HashRef[Str]]',
     lazy => 1,
     builder => '_build_notes',
+    auto_deref => 1,
 );
 
 sub _build_base_uri_notes {
@@ -58,9 +59,8 @@ sub _build_base_uri_notes {
 
     my ($response, $data);
 
-    #$response = $self->get($self->base_uri);
+    #$response = $self->agent->get($self->base_uri);
     #$data = from_json $response->content;
-    #print Dumper $data;
 
     #$response = $self->get($data->{versions}[0]);
     $response = $self->agent->get($self->base_uri . "/0.9.0");

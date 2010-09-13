@@ -1,16 +1,6 @@
 Net-Rackspace-Notes
 
-A convenient command line interface to Rackspace Notes.
-
-Usage: racknotes [OPTIONS]
-
-  Options:
-    -h, --help            display this help message
-        --add=subject     add a new note, content is read from stdin
-        --append=noteid   append the content of stdin to the note
-    -d, --delete=noteid   delete the note
-    -l, --list            lists id and subject of all notes
-    -s, --show=noteid     show the content of the note
+A convenient command line interface to Rackspace Email Notes.
 
 INSTALLATION
 
@@ -21,10 +11,20 @@ To install this module, run the following commands:
 	make test
 	make install
 
+Usage: racknotes command [arguments]
+  
+  Available Commands:
+    add         add a new note, content is read from stdin
+    append      append the content of stdin to the note
+    delete      delete the note
+    help        show syntax and available commands
+    list        lists id and subject of all notes
+    show        show the contents of the note
+
 SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
-perldoc command.
+perldoc command:
 
     perldoc racknotes
 

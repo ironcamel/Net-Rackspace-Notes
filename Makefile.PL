@@ -17,10 +17,10 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'App::Rad'                               => 0,
-        'Config::General'                        => 0,
         'JSON'                                   => 0,
         'LWP::UserAgent'                         => 0,
         'Moose'                                  => 0,
+        #'Parallel::ForkManager'                  => 0,
         'Test::More'                             => 0,
         'Term::ReadPassword'                     => 0,
     },
