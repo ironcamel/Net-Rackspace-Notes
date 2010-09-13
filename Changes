@@ -1,6 +1,6 @@
 Revision history for Net-Rackspace-Notes
 
-0.0101  2010-09-12
+0.0101  2010-09-13
         * Updated pod and README to correctly reflect the new usage.
         * Users can now just provide their email and not their password in the
           config file. Then they will only be prompted for their password when
