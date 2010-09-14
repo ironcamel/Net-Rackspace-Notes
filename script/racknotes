@@ -62,8 +62,7 @@ sub delete {
     my $num = get_required_opt($c, 'num');
     my $racknotes = $c->stash->{racknotes};
     my $response = $racknotes->delete_note($num);
-    return "status: " . $response->status_line;
-    #print $response->content . "\n" unless $response->is_success;
+    return ref $response ? "status: " . $response->status_line : $response;
 }
 
 sub show {

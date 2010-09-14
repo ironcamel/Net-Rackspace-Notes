@@ -118,8 +118,9 @@ sub add_note {
 
 sub delete_note {
     my ($self, $num) = @_;
-    my $uri = $self->notes->[$num]{uri};
-    my $req = HTTP::Request->new(DELETE => $uri);
+    my $note = $self->notes->[$num];
+    return "Note $num does not exist." unless $note;
+    my $req = HTTP::Request->new(DELETE => $note->{uri});
     $req->header(Content_Type => 'application/json');
     my $response = $self->agent->request($req);
     splice(@{$self->notes}, $num, 1) if $response->is_success;
