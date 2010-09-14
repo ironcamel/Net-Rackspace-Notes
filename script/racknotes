@@ -137,7 +137,26 @@ racknotes - A command line interface to Rackspace Email Notes.
       list        lists id and subject of all notes
       show        show the contents of the note
 
-=head1 OPTIONS
+  # List all of your notes.
+  $ racknotes list
+
+  # Delete note number 3.
+  $ racknotes delete --num=3
+
+  # Same thing.
+  $ racknotes delete -n 3
+
+  # Some commands expect to read text from stdin. You can type some text
+  # and then hit <ctrl-d> when you are done.
+  $ racknotes add --subject=foo
+  some text
+  <ctrl-d>
+
+  # Or you could use piping or redirection.
+  $ echo allo | racknotes add -s 'adding note contents via piping'
+  $ racknotes add -s 'adding note contents via redirection' < some_file.txt
+
+=head1 COMMANDS
 
 =over 4
 
