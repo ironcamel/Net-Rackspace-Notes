@@ -1,5 +1,10 @@
 Revision history for Net-Rackspace-Notes
 
+0.0103  2010-09-14
+        * Use Parallel::ForkManager.
+        * Fixed a bug where notes where generated in a different order between
+          subsequent commands.
+
 0.0102  2010-09-14
         * Improving documentation.
 

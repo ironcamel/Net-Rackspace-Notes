@@ -1,5 +1,5 @@
 use Test::More;
 
-ok 1, 'good job';
+use_ok 'Net::Rackspace::Notes';
 
 done_testing;

@@ -3,9 +3,11 @@ use Moose;
 
 our $VERSION = '0.0102';
 
+use Data::Dumper;
 use HTTP::Request;
 use JSON qw(to_json from_json);
 use LWP::UserAgent;
+use Parallel::ForkManager;
 
 has email => (
     is => 'ro',
@@ -78,31 +80,25 @@ sub _build_base_uri_notes {
 sub _build_notes {
     my ($self) = @_;
     my $response = $self->agent->get($self->base_uri_notes);
-    my $data = from_json $response->content;
-
-    my @children;
-    foreach my $uri (map $_->{uri}, @{$data->{notes}}) {
-        my $pid = open my $p, '-|';
-        if ($pid) { # parent
-            push @children, [ $p, $uri ];
-        } else { # child
-            $response = $self->agent->get($uri);
-            print $response->content;
-            exit;
-        }
-    }
+    my $data = from_json($response->content);
 
     my @notes;
-    foreach my $child (@children) {
-        my ($p, $uri) = @$child;
-        my $json = do { local $/; <$p> };
-        close $p;
-        $data = from_json($json)->{note};
-        $data->{uri} = $uri;
-        push @notes, $data;
-    }
+    my $pm = new Parallel::ForkManager(30);
+    $pm->run_on_finish (sub {
+        my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $note) = @_;
+        push @notes, $note;
+    });
 
-    return \@notes;
+    foreach my $uri (map $_->{uri}, @{$data->{notes}}) {
+        my $pid = $pm->start and next;
+        my $response = $self->agent->get($uri);
+        my $note = from_json($response->content)->{note};
+        $note->{uri} = $uri;
+        $pm->finish(0, $note);
+    };
+    $pm->wait_all_children;
+
+    return [ sort { $a->{subject} cmp $b->{subject} } @notes ];
 }
 
 sub add_note {
@@ -122,11 +118,11 @@ sub add_note {
 
 sub delete_note {
     my ($self, $num) = @_;
-    my $uri = $self->notes->[$num]->{uri};
+    my $uri = $self->notes->[$num]{uri};
     my $req = HTTP::Request->new(DELETE => $uri);
     $req->header(Content_Type => 'application/json');
     my $response = $self->agent->request($req);
-    #splice(@{notes()}, $num, 1) if ($response->is_success);
+    splice(@{$self->notes}, $num, 1) if $response->is_success;
     return $response;
 }
 
