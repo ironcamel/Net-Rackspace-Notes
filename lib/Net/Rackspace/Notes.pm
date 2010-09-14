@@ -1,7 +1,7 @@
 package Net::Rackspace::Notes;
 use Moose;
 
-our $VERSION = '0.0102';
+our $VERSION = '0.0103';
 
 use Data::Dumper;
 use HTTP::Request;
@@ -133,7 +133,7 @@ Net::Rackspace::Notes - A way to interface with your Rackspace Email Notes.
 
 =head1 VERSION
 
-Version 0.0102
+Version 0.0103
 
 =head1 SYNOPSIS
 
