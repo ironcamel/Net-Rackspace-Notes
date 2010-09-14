@@ -1,7 +1,7 @@
 package Net::Rackspace::Notes;
 use Moose;
 
-our $VERSION = '0.0103';
+our $VERSION = '0.0200';
 
 use Data::Dumper;
 use HTTP::Request;
@@ -116,6 +116,22 @@ sub add_note {
     return $response;
 }
 
+sub put_note {
+    my ($self, $content, $num) = @_;
+    my $orig_note = $self->notes->[$num];
+    my $req = HTTP::Request->new(PUT => $orig_note->{uri});
+    $req->header(Content_Type => 'application/json');
+    my $json = to_json({
+        note => {
+            subject => $orig_note->{subject},
+            content => $content,
+        }
+    });
+    $req->content($json);
+    my $response = $self->agent->request($req);
+    return $response;
+}
+
 sub delete_note {
     my ($self, $num) = @_;
     my $note = $self->notes->[$num];
@@ -133,7 +149,7 @@ Net::Rackspace::Notes - A way to interface with your Rackspace Email Notes.
 
 =head1 VERSION
 
-Version 0.0103
+Version 0.0200
 
 =head1 SYNOPSIS
 
@@ -168,11 +184,15 @@ Add a new note with the given subject and content.
 
 =head2 delete_note($num)
 
-Delete note at index $num, as returned by notes().
+Delete the note at $notes->[$num].
 
 =head2 notes()
 
 Returns an arrayref of all the notes.  Returns a list in list context.
+
+=head2 put_note($content, $num)
+
+Replace the contents of notes->[$num] with $content.
 
 =head1 AUTHOR
 
@@ -186,17 +206,21 @@ automatically be notified of progress on your bug as I make changes.
 
 =head1 SUPPORT
 
-You can find documentation for this module with the perldoc command.
+You can find documentation for this module with the perldoc command:
 
     perldoc Net::Rackspace::Notes
+
+For the command line tool:
+    
+    perldoc racknotes
 
 You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker
+=item * Github: Contribute by submitting patches, bugs and suggestions
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-Rackspace-Notes>
+L<http://github.com/ironcamel/Net-Rackspace-Notes>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
@@ -205,10 +229,6 @@ L<http://annocpan.org/dist/Net-Rackspace-Notes>
 =item * CPAN Ratings
 
 L<http://cpanratings.perl.org/d/Net-Rackspace-Notes>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Net-Rackspace-Notes/>
 
 =back
 

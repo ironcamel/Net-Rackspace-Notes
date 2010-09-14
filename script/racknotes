@@ -11,11 +11,12 @@ use Term::ReadPassword qw(read_password);
 sub setup {
     my $c = shift;
     $c->register_commands({
-        add    => 'add a new note, content is read from stdin',
-        append => 'append the content of stdin to the note',
-        delete => 'delete the note',
-        list   => 'lists id and subject of all notes',
-        show   => 'show the contents of the note',
+        add     => 'add a new note, content is read from stdin',
+        append  => 'append the content of stdin to the note',
+        delete  => 'delete the note',
+        list    => 'lists id and subject of all notes',
+        replace => 'replace the contents of the note',
+        show    => 'show the contents of the note',
     });
 }
 
@@ -52,8 +53,16 @@ sub append {
     my $body = do { local $/; <STDIN> };
     my $note = $racknotes->notes->[$num];
     my $content = $note->{content} . $body;
-    my $response = $racknotes->add_note($note->{subject}, $content);
-    $response = $racknotes->delete_note($num);
+    my $response = $racknotes->put_note($content, $num);
+    return "status: " . $response->status_line;
+}
+
+sub replace {
+    my $c = shift;
+    my $num = get_required_opt($c, 'num');
+    my $racknotes = $c->stash->{racknotes};
+    my $body = do { local $/; <STDIN> };
+    my $response = $racknotes->put_note($body, $num);
     return "status: " . $response->status_line;
 }
 
@@ -134,6 +143,7 @@ racknotes - A command line interface to Rackspace Email Notes.
       delete      delete the note
       help        show syntax and available commands
       list        lists id and subject of all notes
+      replace     replace the contents of the note
       show        show the contents of the note
 
   # List all of your notes.
@@ -179,7 +189,12 @@ Delete the note.
 =item B<list>
 
 List all the notes.
-Each note is numbered so that other commands can refer to them.
+Each note is numbered so that other commands can refer to them via --num.
+
+=item B<replace -n|--num=NUM>
+
+Replace the contents of the note.
+The new content is read from stdin.
 
 =item B<show -n|--num=NUM>
 
