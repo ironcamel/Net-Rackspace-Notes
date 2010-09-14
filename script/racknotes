@@ -126,6 +126,7 @@ __END__
 racknotes - A command line interface to Rackspace Email Notes.
 
 =head1 SYNOPSIS
+
   Usage: racknotes command [arguments]
   
   Available Commands:
@@ -159,7 +160,8 @@ Delete the note.
 
 =item B<list>
 
-List the id and subject of all the notes.
+List all the notes.
+Each note is numbered so that other commands can refer to them.
 
 =item B<show -n|--num=NUM>
 
