@@ -132,11 +132,8 @@ sub validate_email {
     die "[$email] is not a valid email address\n" unless $email =~ /.+@.+\..+/;
 }
 
-__END__
-
-=head1 NAME
-
-racknotes - A command line interface to Rackspace Email Notes.
+# ABSTRACT: A command line interface to Rackspace Email Notes.
+# PODNAME: racknotes
 
 =head1 SYNOPSIS
 
@@ -159,13 +156,13 @@ racknotes - A command line interface to Rackspace Email Notes.
 
   # Some commands expect to read text from stdin. You can type some text
   # and then hit <ctrl-d> when you are done.
-  $ racknotes add foo
-  some text
+  $ racknotes add 'some subject'
+  blah blah blah
   <ctrl-d>
 
-  # Or you could use piping or redirection.
-  $ echo allo | racknotes add 'adding note contents via piping'
-  $ racknotes add 'adding note contents via redirection' < some_file.txt
+  # Or you could use pipes or redirection.
+  $ echo allo | racknotes add 'adding note via pipe'
+  $ racknotes add 'adding note via file redirection' < some_file.txt
 
 =head1 COMMANDS
 

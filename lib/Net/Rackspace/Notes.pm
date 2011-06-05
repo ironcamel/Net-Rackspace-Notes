@@ -142,13 +142,9 @@ sub delete_note {
     return $response;
 }
 
-=head1 NAME
+1;
 
-Net::Rackspace::Notes - A way to interface with your Rackspace Email Notes.
-
-=head1 VERSION
-
-Version 0.0200
+# ABSTRACT: An interface to Rackspace Email Notes.
 
 =head1 SYNOPSIS
 
@@ -193,58 +189,4 @@ Returns an arrayref of all the notes.  Returns a list in list context.
 
 Replace the contents of notes->[$num] with $content.
 
-=head1 AUTHOR
-
-Naveed Massjouni, C<< <naveedm9 at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-net-rackspace-notes at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Net-Rackspace-Notes>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command:
-
-    perldoc Net::Rackspace::Notes
-
-For the command line tool:
-    
-    perldoc racknotes
-
-You can also look for information at:
-
-=over 4
-
-=item * Github: Contribute by submitting patches, bugs and suggestions
-
-L<http://github.com/ironcamel/Net-Rackspace-Notes>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Net-Rackspace-Notes>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Net-Rackspace-Notes>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2010 Naveed Massjouni.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
 =cut
-
-'Net::Rackspace::Notes'
