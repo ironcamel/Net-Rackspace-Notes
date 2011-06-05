@@ -19,12 +19,12 @@ Usage: racknotes command [arguments]
     delete      delete the note
     help        show syntax and available commands
     list        lists id and subject of all notes
+    replace     replace the contents of the note
     show        show the contents of the note
 
 SUPPORT AND DOCUMENTATION
 
-After installing, you can find documentation for this module with the
-perldoc command:
+After installing, you can read the documentation with the perldoc command:
 
     perldoc racknotes
 

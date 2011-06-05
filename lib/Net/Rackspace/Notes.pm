@@ -1,25 +1,16 @@
 package Net::Rackspace::Notes;
 use Moose;
 
-our $VERSION = '0.0200';
+# VERSION
 
-use Data::Dumper;
+#use Data::Dump;
 use HTTP::Request;
 use JSON qw(to_json from_json);
 use LWP::UserAgent;
 use Parallel::ForkManager;
 
-has email => (
-    is => 'ro',
-    isa => 'Str',
-    required => 1,
-);
-
-has password => (
-    is => 'ro',
-    isa => 'Str',
-    required => 1,
-);
+has email    => ( is => 'ro', isa => 'Str', required => 1);
+has password => ( is => 'ro', isa => 'Str', required => 1);
 
 has agent => (
     is => 'ro',
@@ -33,6 +24,7 @@ has agent => (
         $agent->default_header(Accept => 'application/json');
         return $agent;
     },
+    handles => [qw(get request)],
 );
 
 has base_uri => (
@@ -62,12 +54,13 @@ sub _build_base_uri_notes {
     my ($response, $data);
 
     #$response = $self->agent->get($self->base_uri);
-    #$data = from_json $response->content;
+    #dd from_json $response->content;
+    #exit;
 
-    #$response = $self->get($data->{versions}[0]);
+    #$response = $self->agent->get($data->{versions}[0]);
     $response = $self->agent->get($self->base_uri . "/0.9.0");
     my $status = $response->status_line;
-    die "Response was $status. Check your email and password.\n"
+    die "Response was $status.\nCheck your email and password.\n"
         unless $status =~ /^2\d\d/;
     $data = from_json $response->content;
 
@@ -79,8 +72,10 @@ sub _build_base_uri_notes {
 
 sub _build_notes {
     my ($self) = @_;
-    my $response = $self->agent->get($self->base_uri_notes);
+    my $response = $self->get($self->base_uri_notes);
     my $data = from_json($response->content);
+    #dd $self->base_uri_notes, $response->headers; exit;
+    #dd $data; exit;
 
     my @notes;
     my $pm = new Parallel::ForkManager(30);
@@ -90,15 +85,19 @@ sub _build_notes {
     });
 
     foreach my $uri (map $_->{uri}, @{$data->{notes}}) {
-        my $pid = $pm->start and next;
+        $pm->start and next;
         my $response = $self->agent->get($uri);
+        #dd $response->headers;
+        #dd from_json $response->content;
         my $note = from_json($response->content)->{note};
         $note->{uri} = $uri;
+        $note->{last_modified} = $response->last_modified;
         $pm->finish(0, $note);
     };
     $pm->wait_all_children;
 
-    return [ sort { $a->{subject} cmp $b->{subject} } @notes ];
+    #return [ sort { $a->{subject} cmp $b->{subject} } @notes ];
+    return [ sort { $b->{last_modified} cmp $a->{last_modified} } @notes ];
 }
 
 sub add_note {

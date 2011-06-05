@@ -1,5 +1,11 @@
 Revision history for Net-Rackspace-Notes
 
+1.0000  2011-06-05
+        * Notes are listed sorted by last modification date.
+        * Cmd line options are simpler: racknotes show 7, instead of
+          racknotes show --num=7
+        * Building with Dist::Zilla
+
 0.0200  2010-09-14
         * Added the replace command.
         * Added the method put_note.

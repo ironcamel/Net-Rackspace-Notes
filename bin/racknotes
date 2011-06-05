@@ -1,11 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use lib qw(lib);
 use App::Rad;
-use Getopt::Long qw(GetOptions);
 use Net::Rackspace::Notes qw(notes);
-use Pod::Usage qw(pod2usage);
 use Term::ReadPassword qw(read_password);
 
 sub setup {
@@ -22,8 +19,9 @@ sub setup {
 
 sub pre_process {
     my $c = shift;
-    return if ! grep { $_ eq $c->cmd } $c->commands or $c->cmd eq 'help';
-    $c->getopt('num|n=i', 'subject|s=s') or exit 1;
+    my $cmd = $c->cmd;
+    return if not $cmd or $cmd eq 'help';
+    return unless grep { $_ eq $cmd } $c->commands;
     my ($email, $password) = get_login_info($c);
     $c->stash->{racknotes} = Net::Rackspace::Notes->new(
         email    => $email,
@@ -33,24 +31,23 @@ sub pre_process {
 
 App::Rad->run();
 
-#-------------------------------------------------------------------------------
-# Function definitions ---------------------------------------------------------
+# commands ---------------------------------------------------------------------
 
 sub add {
     my $c = shift;
-    my $subject = $c->options->{subject};
-    my $body = do { local $/; <STDIN> };
+    my $subject = get_arg('subject');
+    my $body = read_stdin();
     my $racknotes = $c->stash->{racknotes};
     my $response = $racknotes->add_note($subject, $body);
-    return "status: " . $response->status_line;
     #print $response->content . "\n" unless $response->is_success;
+    return "status: " . $response->status_line;
 }
 
 sub append {
     my $c = shift;
-    my $num = get_required_opt($c, 'num');
+    my $num = get_arg('note number');
     my $racknotes = $c->stash->{racknotes};
-    my $body = do { local $/; <STDIN> };
+    my $body = read_stdin();
     my $note = $racknotes->notes->[$num];
     my $content = $note->{content} . $body;
     my $response = $racknotes->put_note($content, $num);
@@ -59,16 +56,16 @@ sub append {
 
 sub replace {
     my $c = shift;
-    my $num = get_required_opt($c, 'num');
+    my $num = get_arg('note number');
     my $racknotes = $c->stash->{racknotes};
-    my $body = do { local $/; <STDIN> };
+    my $body = read_stdin();
     my $response = $racknotes->put_note($body, $num);
     return "status: " . $response->status_line;
 }
 
 sub delete {
     my $c = shift;
-    my $num = get_required_opt($c, 'num');
+    my $num = get_arg('note number');
     my $racknotes = $c->stash->{racknotes};
     my $response = $racknotes->delete_note($num);
     return ref $response ? "status: " . $response->status_line : $response;
@@ -76,18 +73,13 @@ sub delete {
 
 sub show {
     my $c = shift;
-    my $num = get_required_opt($c, 'num');
+    my $num = get_arg('note number');
     my $racknotes = $c->stash->{racknotes};
     my $note = $racknotes->notes->[$num];
-    return "Subject: $note->{subject}\n\nBody:\n$note->{content}";
-}
-
-sub get_required_opt {
-    my ($c, $opt) = @_;
-    my $value = $c->options->{$opt};
-    die "Option --$opt is required for command " . $c->cmd . "\n"
-        if not defined $value;
-    return $value;
+    return join "\n",
+        "Subject: $note->{subject}",
+        "Date: " . localtime $note->{last_modified},
+        "Note:\n$note->{content}";
 }
 
 sub list {
@@ -95,16 +87,24 @@ sub list {
     my $count = 0;
     my $racknotes = $c->stash->{racknotes};
     return join "\n",
-        map { sprintf "%2d: %s", $count++, $_->{subject}  } $racknotes->notes;
+        map { sprintf "%2d: %s", $count++, $_->{subject} } $racknotes->notes;
+}
+
+sub get_arg {
+    my $name = shift;
+    die "$name is required\n" unless @ARGV;
+    die "too many arguments\n" if @ARGV > 1;
+    return $ARGV[0];
 }
 
 sub get_login_info {
     my $c = shift;
     my ($email, $password);
     my $config_path = "$ENV{HOME}/.racknotes";
-    if (-r $config_path) {
+    if (-f $config_path) {
         $c->load_config($config_path);
         ($email, $password) = @{$c->config}{qw(email password)};
+        validate_email($email);
         $password = read_password('password: ')
             if not defined($password) or $password eq '';
     } else {
@@ -118,14 +118,19 @@ sub get_login_info {
 
         print "email: ";
         chomp($email = <STDIN>);
-        die "$email is not a valid email address\n"
-            unless $email =~ /.+@.+\..+/;
-
+        validate_email($email);
         $password = read_password('password: ');
     }
     return ($email, $password);
 }
 
+sub read_stdin { local $/; <STDIN> }
+
+sub validate_email {
+    my $email = shift;
+    $email = '' if not defined $email;
+    die "[$email] is not a valid email address\n" unless $email =~ /.+@.+\..+/;
+}
 
 __END__
 
@@ -150,53 +155,50 @@ racknotes - A command line interface to Rackspace Email Notes.
   $ racknotes list
 
   # Delete note number 3.
-  $ racknotes delete --num=3
-
-  # Same thing.
-  $ racknotes delete -n 3
+  $ racknotes delete 3
 
   # Some commands expect to read text from stdin. You can type some text
   # and then hit <ctrl-d> when you are done.
-  $ racknotes add --subject=foo
+  $ racknotes add foo
   some text
   <ctrl-d>
 
   # Or you could use piping or redirection.
-  $ echo allo | racknotes add -s 'adding note contents via piping'
-  $ racknotes add -s 'adding note contents via redirection' < some_file.txt
+  $ echo allo | racknotes add 'adding note contents via piping'
+  $ racknotes add 'adding note contents via redirection' < some_file.txt
 
 =head1 COMMANDS
 
 =over 4
 
-=item B<-h|--help>
+=item B<help>
 
 Print a brief help message.
 
-=item B<add -s|--subject=SUBJECT>
+=item B<add subject>
 
 Add a new note with the given subject.
 The contents of the note will be read from stdin.
 
-=item B<append -n|--num=NUM>
+=item B<append num>
 
 Append the content of stdin to the note.
 
-=item B<delete -n|--num=NUM>
+=item B<delete num>
 
 Delete the note.
 
 =item B<list>
 
 List all the notes.
-Each note is numbered so that other commands can refer to them via --num.
+Each note is numbered so that other commands can refer to them via the number.
 
-=item B<replace -n|--num=NUM>
+=item B<replace num>
 
 Replace the contents of the note.
 The new content is read from stdin.
 
-=item B<show -n|--num=NUM>
+=item B<show num>
 
 Show the contents of the note.
 
